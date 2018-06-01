@@ -3,6 +3,9 @@
 % Примечание: параметр draft помечает строки, вышедшие за границы страницы, прямоугольником, в фильной версии его нужно удалить.
 \documentclass[a4paper,14pt,russian,oneside,final]{extreport}
 
+%\usepackage{relsize}
+%\relscale{0.95}
+
 % Зачем: Настройка Times New Roman.
 % Рекомендовано для Windows (нужен PSCyr, подробности см. в fonts_windows.tex)
 % раскомментировать, чтобы использовать:
@@ -32,7 +35,7 @@
 % Зачем: Длинна, пимерно соответвующая 5 символам
 % Почему: Требования содержат странное требование про отсупы в 5 символов (для немоноширинного шрифта :| )
 \newlength{\fivecharsapprox}
-\setlength{\fivecharsapprox}{6ex}
+\setlength{\fivecharsapprox}{5.5ex}
 
 
 % Зачем: Добавляет отступы для абзацев.
@@ -45,11 +48,17 @@
 % Почему: Пункт 2.1.2 Требований по оформлению пояснительной записки.
 \usepackage[left=3cm,top=2.0cm,right=1.5cm,bottom=2.7cm]{geometry}
 
+% запретить переносы полностью
+\hyphenpenalty=10000
+\sloppy
+\vbadness=10000
+\hbadness=10000
+\tolerance=9999
 
 % Зачем: Настраивает межстрочный интервал, для размещения 40 +/- 3 строки текста на странице.
 % Почему: Пункт 2.1.1 Требований по оформлению пояснительной записки.
 \usepackage[nodisplayskipstretch]{setspace} 
-\setstretch{1.1}
+\setstretch{0.91}
 %\onehalfspacing
 
 % Зачем: Выбор шрифта по-умолчанию. 

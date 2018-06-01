@@ -4,13 +4,14 @@
 
 \begin{document}
 
-\input{diploma_title} % page 1
+%\input{diploma_title} % page 1
+\includepdf[pages={-}]{includes/title.pdf} % приложить готовый тайтл вместо сгенерированного
 
 \input{abstract} % page 2
 
-%\input{diploma_task} % pages 3 and 4. printed separately
+\input{diploma_task} % pages 3 and 4. printed separately !! включить в структуру
 
-\input{annotation} % not part of report
+%\input{annotation} % not part of report
 
 %\input{feedback} % not part of report
 
@@ -22,11 +23,11 @@
 
 \input{diploma_content}
 
-\input{references}
+%\input{references} % !!вставить руками пдф
 
 % \includepdf позволяет включить в результирующий pdf документ часть другого pdf документа, сделанного
 % например не с помощью TeX. Бывает полезно, если какие-то диаграммны нарисованы, например, с помощью 
 % Microoft Office и сохранены в pdf.
 %\includepdf[pages={-}]{documents_list.pdf}
 
-\end{document}
+\end{document}\grid
