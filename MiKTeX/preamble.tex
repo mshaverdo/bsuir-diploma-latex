@@ -58,7 +58,7 @@
 % Зачем: Настраивает межстрочный интервал, для размещения 40 +/- 3 строки текста на странице.
 % Почему: Пункт 2.1.1 Требований по оформлению пояснительной записки.
 \usepackage[nodisplayskipstretch]{setspace} 
-\setstretch{0.91}
+\setstretch{0.93}
 %\onehalfspacing
 
 % Зачем: Выбор шрифта по-умолчанию. 
@@ -98,7 +98,7 @@
 
 % Зачем: Пункты (в терминологии требований) в терминологии TeX subsubsection должны нумероваться
 % Почему: Пункт 2.2.3 Требований по оформлению пояснительной записки.
-\setcounter{secnumdepth}{3}
+\setcounter{secnumdepth}{4}
 
 
 % Зачем: Настраивает отступ между таблицей с содержанимем и словом СОДЕРЖАНИЕ
@@ -165,6 +165,18 @@
     {-1em \@plus -1ex \@minus -.2ex}%
     {.1em}%
     {\raggedright\hyphenpenalty=10000\normalfont\normalsize\bfseries}}
+\makeatother
+
+% Зачем: Задает стиль заголовков пунктов
+% Почему: Пункты 2.1.1, 2.2.5 и ПРИЛОЖЕНИЕ Л Требований по оформлению пояснительной записки.
+\makeatletter
+\renewcommand\paragraph{
+  \@startsection{paragraph}{4}%
+    {\fivecharsapprox}%
+    {-1em \@plus -1ex \@minus -.2ex}%
+    {.1em}%
+    {\raggedright\hyphenpenalty=10000\normalfont\normalsize\bfseries}%
+} %
 \makeatother
 
 % Зачем: для оформления введения и заключения, они должны быть выровнены по центру.
@@ -386,9 +398,11 @@
 \lstdefinestyle{pythonstyle}{
    xleftmargin=0ex,
    language=Python,
-   basicstyle=\footnotesize\ttfamily,
+   basicstyle=\ttfamily,
    breaklines=true,
-   columns=fullflexible
+   columns=fullflexible,
+   belowskip=1em,
+   aboveskip=1em,
 }
 
 \lstdefinestyle{pythoninlinestyle} {
