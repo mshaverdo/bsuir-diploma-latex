@@ -342,7 +342,7 @@ experiments.append(experiment)
 \end{lstlisting}
 
 
-В качестве входного аргумента получает строку с именем CSV файла данных. Данные для визуализации получает в формате CSV, что обусловлено табличным характером входных данных. Источником входных данных может быть любое приложение, позволяющее представить симулированную, либо реальную телеметрию в необходимом формате. Вывод симулятора с установленным флагом “-s” является валидным источником данных для генератора правил.
+В качестве входного аргумента получает строку с именем CSV файла данных. Данные для визуализации получает в формате CSV, что обусловлено табличным характером входных данных. Источником входных данных может быть любое приложение, позволяющее представить симулированную, либо реальную телеметрию в необходимом формате. Вывод симулятора с установленным флагом <<-s>> является валидным источником данных для генератора правил.
 
 Опишем формат входных данных. Первой строкой, завершающейся символом \\n является заголовок, в котором заданы названия колонок. Допустимые колонки:
 
@@ -1273,11 +1273,11 @@ center += part
 Методы класса \lstinline! fuzzisim.mamdani.Membership!:
 \begin{itemize}
 	\item \lstinline! __init__(self, term, degree)!. Инициализирует поля объекта.
-	\item \lstinline!  __eq__(self, other)!. Магический метод “равно” объектов класса fuzzisim.mamdani.Membership
-	\item \lstinline! __lt__(self, other)!. Магический метод “меньше, чем” объектов класса fuzzisim.mamdani.Membership
-	\item \lstinline! __le__(self, other)!. Магический метод “меньше или равно” объектов класса fuzzisim.mamdani.Membership
-	\item \lstinline! __gt__(self, other)!. Магический метод “больше, чем” объектов класса fuzzisim.mamdani.Membership
-	\item \lstinline! __ge__(self, other)!. Магический метод “больше или равно” объектов класса fuzzisim.mamdani.Membership
+	\item \lstinline!  __eq__(self, other)!. Магический метод <<равно>> объектов класса fuzzisim.mamdani.Membership
+	\item \lstinline! __lt__(self, other)!. Магический метод <<меньше, чем>> объектов класса fuzzisim.mamdani.Membership
+	\item \lstinline! __le__(self, other)!. Магический метод <<меньше или равно>> объектов класса fuzzisim.mamdani.Membership
+	\item \lstinline! __gt__(self, other)!. Магический метод <<больше, чем>> объектов класса fuzzisim.mamdani.Membership
+	\item \lstinline! __ge__(self, other)!. Магический метод <<больше или равно>> объектов класса fuzzisim.mamdani.Membership
 	\item \lstinline! __str__(self)!. Магический метод преобразования в строку объектов класса fuzzisim.mamdani.Membership
 \end{itemize}
 
@@ -1426,27 +1426,21 @@ center += part
 As = Term('As', 0, 0, 3, 5)
 Al = Term('Al', 3, 6, inf, inf)
 A = Variable('A', [As, Al], 0, 10)
-
 Bs = Term('Bs', 0, 0, 3, 6)
 Bl = Term('Bl', 4, 6, inf, inf)
 B = Variable('B', [Bs, Bl], 0, 10)
-
 Ws = Term('Ws', 0, 0, 1, 3)
 Wm = Term('Wm', 2, 4, 6, 8)
 Wl = Term('Wl', 6, 8, inf, inf)
 W = Variable('W', [Ws, Wm, Wl], 0, 10)
-
 in_variables = [A, B]
-
 out_variables = [W, ]
-
 rules = [
   Rule([Cond(A, As), Cond(B, Bs)], [Cond(W, Ws)]),
   Rule([Cond(A, As), Cond(B, Bl)], [Cond(W, Wm)]),
   Rule([Cond(A, Al), Cond(B, Bs)], [Cond(W, Wm)]),
   Rule([Cond(A, Al), Cond(B, Bl)], [Cond(W, Wl)]),
 ]
-
 in_crisp_values = {'A': 4, 'B': 5}
 \end{lstlisting}
 
