@@ -3,6 +3,8 @@
 % Примечание: параметр draft помечает строки, вышедшие за границы страницы, прямоугольником, в фильной версии его нужно удалить.
 \documentclass[a4paper,14pt,russian,oneside,final]{extreport}
 
+\usepackage{couriernew}
+
 %\usepackage{relsize}
 %\relscale{0.95}
 
@@ -140,7 +142,7 @@
     {\fivecharsapprox}%
     {-1em \@plus -1ex \@minus -.2ex}%
     {1em \@plus .2ex}%
-    {\raggedright\hyphenpenalty=10000\normalfont\large\bfseries\MakeUppercase}}
+    {\raggedright\hyphenpenalty=10000\normalfont\bfseries\MakeUppercase}}
 \makeatother
 
 
@@ -187,7 +189,7 @@
     {\z@}%
     {-1em \@plus -1ex \@minus -.2ex}%
     {1em \@plus .2ex}%
-    {\centering\hyphenpenalty=10000\normalfont\large\bfseries\MakeUppercase}%
+    {\centering\hyphenpenalty=10000\normalfont\bfseries\MakeUppercase}%
     }
 \makeatother
 
@@ -398,7 +400,8 @@
 \lstdefinestyle{pythonstyle}{
    xleftmargin=0ex,
    language=Python,
-   basicstyle=\ttfamily,
+%    basicstyle=\fontsize{12}{12}\fontfamily{couriernew}\selectfont,
+   basicstyle=\ttfamily\fontsize{12}{12}\selectfont,
    breaklines=true,
    columns=fullflexible,
    belowskip=1em,
