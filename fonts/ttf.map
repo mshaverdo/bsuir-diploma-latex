@@ -1,0 +1,4 @@
+eccouriernew CourierNew " T1Encoding ReEncodeFont " <couriernew.ttf T1-WGL4.enc
+eccouriernewi CourierNew-Italic " T1Encoding ReEncodeFont " <couriernewi.ttf T1-WGL4.enc
+eccouriernewb CourierNew-Bold " T1Encoding ReEncodeFont " <couriernewb.ttf T1-WGL4.enc
+eccouriernewz CourierNew-BoldItalic " T1Encoding ReEncodeFont " <couriernewz.ttf T1-WGL4.enc
