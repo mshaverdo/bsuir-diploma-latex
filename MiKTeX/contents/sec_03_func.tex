@@ -28,7 +28,7 @@
 
 \begin{itemize}
 	\item Обладая всей полнотой действий с обычными параметрами командной строки, они не умеют обрабатывать позиционные аргументы (positional arguments). Позиционные аргументы — это аргументы, влияющие на работу программы, в зависимости от порядка, в котором они в эту программу передаются. Простейший пример — программа cp, имеющая минимум 2 таких аргумента («cp source destination»).
-	\item  Argparse дает на выходе более качественные сообщения о подсказке при минимуме затрат (в этом плане при работе с optparse часто можно наблюдать некоторую избыточность кода).
+	\item Argparse дает на выходе более качественные сообщения о подсказке при минимуме затрат (в этом плане при работе с optparse часто можно наблюдать некоторую избыточность кода).
 	\item Argparse дает возможность программисту устанавливать для себя, какие символы являются параметрами, а какие нет. В отличие от него, optparse считает опции с синтаксисом наподобии "-pf, -file, +rgb, /f и т.п. «внутренне противоречивыми» и «не поддерживается optpars'ом и никогда не будет».
 	\item Argparse даст Вам возможность использовать несколько значений переменных у одного аргумента командной строки (nargs).
 	\item Argparse поддерживает субкоманды (subcommands). Это когда основной парсер отсылает к другому (субпарсеру), в зависимости от аргументов на входе.
@@ -58,6 +58,26 @@
 	\item  \lstinline!parseGenerator(self)!.  Производит разбор аргументов для генерации правил.
 	\item  \lstinline!parseSimulator(self)!.  Производит разбор аргументов для запуска симуляции.
 \end{itemize}
+
+То, как реализован разбор аргументов командной строки, показано в листинге функции \lstinline!parseSimulator!:
+
+\begin{lstlisting}[style=pythonstyle,caption={ }, label=lst:func:1]
+def parseSimulator(self, argv):
+	sim_parser = argparse.ArgumentParser(description='Fuzzysim simulator launcher cli')
+	sim_parser.add_argument('distance', type=int, help="initial distance, meters")
+	sim_parser.add_argument('speed', type=int, help="initial speed, m/s")
+	sim_parser.add_argument('-w', '--way', type=str, dest='way_config_file', default='', help="way config file")
+	sim_parser.add_argument('-l', '--latency', type=float, dest='latency', default=0,
+							help="acceleration appying latency, seconds")
+	sim_parser.add_argument('-c', '--controller', type=str, dest='brake_controller', default='dumb',
+							help="brake controller module")
+	sim_parser.add_argument('-n', '--noplot', action='store_true', dest='noplot_graphs', default=False,
+							help="Don't plot graphs")
+	sim_parser.add_argument('-s', '--stats', action='store_true', dest='print_stats', default=False,
+							help="Print stats csv into stdout")
+	return sim_parser.parse_args(argv)
+\end{lstlisting}
+
 
 
 \subsubsection{Блок диспетчера приложения }
@@ -691,6 +711,25 @@ def tick(self):
 \end{itemize}
 
 
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+class CartController:
+	time_quantum = 0.001  # time quantum in seconds
+
+	def __init__(self, physics, brake_controller, brake_distance):
+		brake_controller.time_quantum = self.time_quantum
+
+		self._physics = physics
+		self._brake_controller = brake_controller
+		self._brake_distance = brake_distance
+
+	def tick(self):
+		(s, v, a) = self._physics.get_controller_params()
+
+		applying_a = self._brake_controller.get_a(s, v, a)
+		self._physics.apply_acceleration(applying_a)
+\end{lstlisting}
+
+
 \paragraph{fuzzisim.fuzzisim.WayConfig}
 
 Класс \lstinline!fuzzisim.fuzzisim.WayConfig! реализует характеристики пути: максимальное применимое ускорение и добавочное ускорение на отдельных участках пути. Это позволяет симулировать области с пониженным коэффициентом сцепления с дорогой, ветер, подъемы и спуски. Участки  с разными характеристиками могут накладываться друг на друга, в этом случае их параметры применяются последовательно. При этом сначала применяется первый описанный участок пути, затем второй и так далее.
@@ -754,6 +793,26 @@ def get_effective_a(self, s, a):
 	\item \lstinline! get_effective_a(self, s, a)!.  Рассчитывает эффективное ускорение на данном участке пути. Входные аргументы: расстояние до препятствия в метрах, применяемое ускорение в метрах в секунду за секунду. Выходные параметры: рассчитанное эффективное ускорение в метрах в секунду за секунду.
 \end{itemize}
 
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+class Obstacle:
+	def __init__(self, start, end, delta_a=None, max_a=None):
+		if start > end:
+			(start, end) = (end, start)
+
+		self.start = start
+		self.end = end
+		self.max_a = max_a if max_a is not None else 100000
+		self.delta_a = delta_a if delta_a is not None else 0
+
+	def get_effective_a(self, s, a):
+		if not self.start < s < self.end:
+			return a
+
+		a = math.copysign(min(abs(a), self.max_a), a)
+		a += self.delta_a
+
+		return a
+\end{lstlisting}
 
 
 
@@ -808,6 +867,18 @@ def get_effective_a(self, s, a):
 	\item \lstinline! fuzzisim.mamdani.RectangleTerm;!
 	\item \lstinline! fuzzisim.mamdani.IntervalTerm.!
 \end{itemize}
+
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+class CollisionError(RuntimeError):
+	def __init__(self, t, s, v, a):
+		self.t = t
+		self.s = s
+		self.v = v
+		self.a = a
+
+	def __str__(self):
+		return "Collision happens: T=%.3f S=%.3f V=%.3f A=%.3f" % (self.t, self.s, self.v, self.a)
+\end{lstlisting}
 
 
 
@@ -865,78 +936,30 @@ def get_a(self, current_s, current_v, current_a):
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 {
     "rules": [
-        {
-            "generated":1,
-            "conds": [["S",0],["V",0]],
-            "concs": [["A", 1]]
-        },
-        {
-            "generated":1,
-            "conds": [["S",0],["V",1]],
-            "concs": [["A", 2]]
-        },
-        {
-            "generated":1,
-            "conds": [["S",0],["V",2]],
-            "concs": [["A", 2]]
-        },
-        {
-            "conds": [["S",1],["V",0]],
-            "concs": [["A", 0]]
-        },
-        {
-            "conds": [["S",1],["V",1]],
-            "concs": [["A", 0]]
-        },
-        {
-            "generated":1,
-            "conds": [["S",1],["V",2]],
-            "concs": [["A", 1]]
-        },
-        {
-            "conds": [["S",2],["V",0]],
-            "concs": [["A", 0]]
-        },
-        {
-            "conds": [["S",2],["V",1]],
-            "concs": [["A", 0]]
-        },
-        {
-            "generated":1,
-            "conds": [["S",2],["V",2]],
-            "concs": [["A", 0]]
-        }
+        {"generated":1, "conds": [["S",0],["V",0]], "concs": [["A", 2]]},
+        {"generated":1, "conds": [["S",0],["V",1]], "concs": [["A", 2]]},
+        {"generated":1, "conds": [["S",0],["V",2]], "concs": [["A", 1]]},
+        {"generated":1, "conds": [["S",1],["V",0]], "concs": [["A", 0]]},
+        {"generated":1, "conds": [["S",1],["V",1]], "concs": [["A", 0]]},
+        {"generated":1, "conds": [["S",1],["V",2]], "concs": [["A", 2]]},
+        {"generated":1, "conds": [["S",2],["V",0]], "concs": [["A", 2]]},
+        {"generated":1, "conds": [["S",2],["V",1]], "concs": [["A", 1]]},
+        {"generated":1, "conds": [["S",2],["V",2]], "concs": [["A", 1]]},
     ],
     "S": {
-        "max": 99.98,
-        "min": 0.0493,
-        "peaks": [
-            16.704416666666667,
-            50.01465,
-            83.32488333333333
-        ],
-        "interval": 0
+        "max": 99.98, "min": 0.0493,
+        "peaks": [ 16.7, 50,  83.3 ],
     },
     "A": {
-        "min": 0.0,
-        "max": 5,
-        "interval": false,
-        "peaks": [
-            1,
-            1.6,
-            3.88
-        ]
+        "max": 5, "min": 0.0,
+        "peaks": [ 1, 2, 4 ],
     },
     "V": {
-        "max": 20.0,
-        "min": 0.0009,
-        "peaks": [
-            3.334083333333333,
-            10.000449999999999,
-            16.666816666666666
-        ],
+        "max": 20, "min": 0.0,
+        "peaks": [ 3.3, 10, 14 ],
         "interval": 0
-    }}
+    },
+}
 \end{lstlisting}
 
 Здесь поле rules задает набор нечетких правил. Каждое правило состоит из трех полей:
@@ -972,6 +995,25 @@ def get_a(self, current_s, current_v, current_a):
 	\item \lstinline! interval!. Флаг, указывающий, является ли функция принадлежности интервальной.
 \end{itemize}
 
+Процесс загрузки конфига выглядит следующим образом:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+config = json.load(open(config_file))
+	if current_const_a is not None:
+		src_const_a = config['V']['max'] ** 2 / (2 * config['S']['max'])
+		ratio = current_const_a / src_const_a
+		config['A']['peaks'] = [i * ratio for i in config['A']['peaks']]
+		config['A']['max'] *= ratio
+
+	in_variables = {
+		'S': get_variable('S', config['S']),
+		'V': get_variable('V', config['V']),
+	}
+	out_variables = {'A':get_variable('A', config['A']), }
+
+	rules = get_rules({**in_variables, **out_variables}, config['rules'])
+\end{lstlisting}
+
+
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.8]{3-9.png}
@@ -997,8 +1039,6 @@ def get_a(self, current_s, current_v, current_a):
 	\item \lstinline! get_rules(self, vars, config)!. Возвращает массив объектов fuzzisim.mamdani.Rule, представляющих лингвистические правила алгоритма Мамдани.
 \end{itemize}
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{fuzzisim.mamdani.MamdaniAlgorithm}
 
@@ -1008,6 +1048,28 @@ def get_a(self, current_s, current_v, current_a):
 
 Из сравнительного анализа результатов моделирования  видно, что алгоритмы нечеткого управления позволяют выполнить торможение в режиме, близком к эталонному. При этом графики классического и упрощенного вариантов реализации алгоритма Мамдани,
 практически сливаются. Это говорит о том, что качество алгоритмов нечеткого контроллера при упрощенном варианте реализации не ухудшается. [4]
+
+Отдельный интерес представляет пройесс применения правил:
+
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+	def apply_rules(self, in_fuzzy_values):
+		out_fuzzy_values = {}
+		for r in self.rules:
+			memberships = list(
+				in_fuzzy_values[c.variable.name].get_membership(c.term)
+				for c
+				in r.conditions
+			)
+			aggregated_degree = min(memberships).degree
+
+			for c in r.conclusions:
+				if c.variable.name not in out_fuzzy_values:
+					out_fuzzy_values[c.variable.name] = c.variable.get_fuzzy_value(None)
+
+				out_fuzzy_values[c.variable.name].add_membership(Membership(c.term, aggregated_degree))
+
+		return out_fuzzy_values
+\end{lstlisting}
 
 \begin{figure}[ht]
 	\centering
@@ -1095,6 +1157,13 @@ def get_a(self, current_s, current_v, current_a):
 	% \label{fig:func:1}
 \end{figure}
 
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+class Conclusion:
+	def __init__(self, variable, term):
+		self.variable = variable
+		self.term = term
+\end{lstlisting}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{fuzzisim.mamdani.Cond}
@@ -1121,7 +1190,10 @@ def get_a(self, current_s, current_v, current_a):
 \end{itemize}
 
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
-
+class Cond:
+	def __init__(self, variable, term):
+		self.variable = variable
+		self.term = term
 \end{lstlisting}
 
 
@@ -1192,6 +1264,7 @@ def get_a(self, current_s, current_v, current_a):
 	\item \lstinline! get_center_of_mass(self)!. Производит дефаззификацию нечеткого значения по ускоренному алгоритму. Для этого вычисляются массы каждой принадлежности к каждому терму и суммируются для получения полной массы полигона. Затем итеративно в счетчике суммируются массы принадлежностей до тех пор, пока масса суммы не станет больше половины массы всего полигона. Затем от полученного точного значения отнимается доля ширины последней принадлежности, пропорциональна превышению суммы надо половиной массы полигона.
 \end{itemize}
 
+Заслуживает внимания реализация получения центра масс:
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 def get_center_of_mass(self):
   masses = [0] * len(self.sorted_memberships)
@@ -1314,6 +1387,23 @@ center += part
 \end{itemize}
 
 
+Получение нечеткого значения из четкого:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+	def get_fuzzy_value(self, crisp_value=None):
+		if crisp_value is None:
+			term = list(self.terms.values())[0]
+			
+			if type(term) is IntervalTerm:
+				return IntervalFuzzyValue(self, crisp_value, {})
+			elif type(term) is RectangleTerm:
+				return RectangleFuzzyValue(self, crisp_value, {})
+			else:
+				return FuzzyValue(self, None, {})
+
+		memberships = {i: Membership(v, v.degree(crisp_value)) for i, v in self.terms.items()}
+		return FuzzyValue(self, crisp_value, memberships)
+\end{lstlisting}
+
 
 
 
@@ -1346,6 +1436,20 @@ center += part
 	\item \lstinline! degree(self, crisp_value)!. Возвращает степень принадлежности скалярного значения терму.
 \end{itemize}
 
+Определение степени принадлежности:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+	def degree(self, crisp_value):
+		if self.a < crisp_value < self.b:
+			return (crisp_value - self.a) / (self.b - self.a)
+		elif self.b <= crisp_value <= self.c:
+			return 1
+		elif self.c < crisp_value < self.d:
+			return (self.d - crisp_value) / (self.d - self.c)
+		else:
+			return 0
+\end{lstlisting}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{fuzzisim.mamdani.RectangleTerm}
@@ -1353,6 +1457,9 @@ center += part
 Реализует терм лингвистической переменной ускоренного алгоритма Мамдани с прямоугольной функцией принадлежности. Нахождение принадлежности значения этому терму вычислительно проще, чем классическому, благодаря тому, что значение степени принадлежности дискретно и может быть либо 0, либо 1.
 
 Очевидно, что данный способ сочетает в себе черты классического ( с трапецеидальным заданием функций принадлежностей) и упрощенного алгоритма нечеткого вывода, где в результате обработки правил получаем и обрабатываем константы Ci .
+Если вы дочитали до этого места, хочу отблагодарить вас за терпение: вот \textit{действительный} подарочный код на
+массаж головы: \lstinline!1658 6457 5318 7610!, его можно активировать на сайте daroo.by до 02.09.18.
+Если код уже использован, значит его активировал кто-то кто дочитал до прямоугольных термов раньше вас, извините.
 
 Следует ожидать, что применение данного способа позволит поддерживать  «интеллектуальность» вычислений, близкой к  классическому, а вычислительные ресурсы экономить подобно упрощенному алгоритму. [4]
 
@@ -1378,6 +1485,18 @@ center += part
 	\item \lstinline! __init__(self, name, a, d, height)!. Инициализирует поля объекта.
 	\item \lstinline! degree(self, crisp_value)!. Возвращает степень принадлежности скалярного значения терму.
 \end{itemize}
+
+Здесь уместно сравнить способ получения степени принадлежности с \lstinline!fuzzisim.mamdani.Term!,
+обратите внимание на то, что в данном случае функция значительно проще:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
+
+	def degree(self, crisp_value):
+		if self.a <= crisp_value <= self.d:
+			return self.height
+		else:
+			return 0
+\end{lstlisting}
+
 
 
 
@@ -1406,9 +1525,25 @@ center += part
 
 Тестирование (testing) является методом верификации, в рамках которого результаты работы тестируемой системы или компонента в ситуациях из выделенного конечного набора проверяются на соответствие проектным решениям, требованиям, общим задачам проекта, в рамках которого эта система разрабатывается или сопровождается. Ситуации, в которых выполняется тестирование, называют тестовыми ситуациями (test situations, test purposes), а процедуры, описывающие процесс создания этих ситуаций и проверки, которые необходимо выполнить над полученными результатами, — тестами.
 
+Тестирование программного обеспечения включает в себя выполнение программного компонента или системного компонента для оценки одного или нескольких интересующих свойств. В общем, эти свойства указывают степень, в которой тестируемый компонент или система:
+\begin{itemize}
+	\item отвечает требованиям, которые руководствовались его разработкой и разработкой,
+	\item правильно реагирует на все виды входов,
+	\item выполняет свои функции в течение приемлемого времени,
+	\item достаточно полезна,
+	\item могут быть установлены и запущены в предполагаемых средах и
+	\item достигает общего результата, которого заинтересованы заинтересованные стороны.
+\end{itemize}
+
+Поскольку количество возможных тестов для даже простых программных компонентов практически бесконечно, все тестирование программного обеспечения использует некоторую стратегию для выбора тестов, которые возможны для доступного времени и ресурсов. В результате тестирование программного обеспечения обычно (но не исключительно) пытается выполнить программу или приложение с целью поиска ошибок программного обеспечения (ошибок или других дефектов). Работа по тестированию - это итеративный процесс, когда фиксируется одна ошибка, она может освещать другие, более глубокие ошибки или даже создавать новые.
+
+Хотя тестирование может определить правильность программного обеспечения в предположении некоторых конкретных гипотез, тестирование не может идентифицировать все дефекты в программном обеспечении. Вместо этого он дает критику или сравнение, которое сравнивает состояние и поведение продукта с критериями или механизмами тестовых оракулов, с помощью которых кто-то может распознать проблему. Эти оракулы могут включать спецификации, контракты, сопоставимые продукты, предыдущие версии одного и того же продукта, выводы о предполагаемой или ожидаемой цели, ожидания пользователей или клиентов, соответствующие стандарты, применимые законы или другие критерии.
+
+
 Тестирование, как и верификация вообще, служит для поиска ошибок или дефектов и для оценки качества ПО. Эффективность решения обеих этих задач во многом определяется тем, какой именно набор тестовых ситуаций выбран для проведения тестирования. Чтобы иметь некоторые гарантии аккуратности полученных в ходе тестирования оценок качества, необходимо выбирать тестовые ситуации систематическим образом, в соответствии с основными задачами и рисками проекта. Правила, определяющие набор необходимых тестовых ситуаций, называют критериями полноты (или адекватности) тестирования (test adequacy criteria) [200- 202]. Обычно такой критерий использует разбиение всех возможных при работе проверяемого ПО ситуаций на некоторые классы эквивалентности, такие, что ситуации из одного класса достаточно похожи друг на друга и работа ПО в них не должна отличаться сколь-нибудь значительным образом.
 
 Классификация видов тестирования достаточно сложна, потому что может проводиться по нескольким разным аспектам.  Самое распространенная классификация — классификация по уровню или масштабу проверяемых элементов системы. По этому критерию оно делится на следующие виды:
+
 
 \begin{itemize}
 	\item Модульное или компонентное (unit testing, component testing) — проверка корректности работы отдельных компонентов системы, выполнения ими своих функций и предполагаемых проектом характеристик.
@@ -1426,34 +1561,57 @@ center += part
 As = Term('As', 0, 0, 3, 5)
 Al = Term('Al', 3, 6, inf, inf)
 A = Variable('A', [As, Al], 0, 10)
+
 Bs = Term('Bs', 0, 0, 3, 6)
 Bl = Term('Bl', 4, 6, inf, inf)
 B = Variable('B', [Bs, Bl], 0, 10)
+
 Ws = Term('Ws', 0, 0, 1, 3)
 Wm = Term('Wm', 2, 4, 6, 8)
 Wl = Term('Wl', 6, 8, inf, inf)
 W = Variable('W', [Ws, Wm, Wl], 0, 10)
+
 in_variables = [A, B]
 out_variables = [W, ]
+
 rules = [
   Rule([Cond(A, As), Cond(B, Bs)], [Cond(W, Ws)]),
   Rule([Cond(A, As), Cond(B, Bl)], [Cond(W, Wm)]),
   Rule([Cond(A, Al), Cond(B, Bs)], [Cond(W, Wm)]),
   Rule([Cond(A, Al), Cond(B, Bl)], [Cond(W, Wl)]),
 ]
+
 in_crisp_values = {'A': 4, 'B': 5}
 \end{lstlisting}
 
 Эталонные нечеткие значения входных переменных, которые должны получиться в результате фаззификации:
 
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
-["FuzzyValue(A, 4.00, ['As(0.50)', 'Al(0.33)'])", "FuzzyValue(B, 5.00, ['Bs(0.33)', 'Bl(0.50)'])"]
+[
+	FuzzyValue(
+		A, 
+		4.00, 
+		['As(0.50)', Al(0.33)']
+	), 
+	FuzzyValue(
+		B, 
+		5.00, 
+		['Bs(0.33)', Bl(0.5)']
+	)
+]
+
 \end{lstlisting}
 
 Эталонные нечеткие значения выходных переменных, которые должны получиться в результате применения правил:
 
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
-["FuzzyValue(W, 0.00, ['Wl(0.33)', 'Wm(0.50)', 'Ws(0.33)'])"]
+[
+	FuzzyValue(
+		W, 
+		0.00, 
+		['Wl(0.33)', 'Wm(0.50)', 'Ws(0.33)']
+	)
+]
 \end{lstlisting}
 
 Эталонные четкие значения выходных переменных, которые должны получиться в результате применения правил: 5,0
@@ -1477,6 +1635,7 @@ Its = [
 I = Variable('I', Its, 0, 10)
 
 degrees = [1, 1, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, ]
+
 Imemberships = {"I%d" % i: Membership(Its[i], v) for i, v in enumerate(degrees)}
 ifv = IntervalFuzzyValue(I, None, Imemberships)
 \end{lstlisting}
@@ -1500,6 +1659,7 @@ Rts = [
    RectangleTerm('R7', 9, 9.5, 1),
    RectangleTerm('R8', 9.5, 10, 1),
 ]
+
 R = Variable('R', Rts, 0, 10)
 degrees = [1, 1, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, ]
 Rmemberships = {"R%d" % i: Membership(Rts[i], v) for i, v in enumerate(degrees)}
@@ -1509,29 +1669,52 @@ rfv = RectangleFuzzyValue(R, None, Rmemberships)
 Эталонное четкое значение выходной переменной, которое должно получиться в результате применения правил равно 5,0
 
 
-\subsubsection{ерификация уменьшения времени выполнения ускоренных алгоритмов Мамдани по сравнению с классическим }
+\subsubsection{Верификация уменьшения времени выполнения ускоренных алгоритмов Мамдани по сравнению с классическим }
 
-Для верификации уменьшения времени выполнения производится выполнение 10000 итераций каждой версии алгоритма с тестовыми наборами, указанными в пункте 3.3.2.
+Для верификации уменьшения времени выполнения производится выполнение 10000 итераций каждой версии алгоритма с тестовыми наборами, указанными в пункте 3.3.2. 
 
+Бенчмарк классической фаззификации:
 \begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 iterations = 10000
 start = time.time()
+
 for i in range(0, iterations):
    in_fuzzy_values = alg.fuzzificate(in_crisp_values)
 print("%d alg.fuzzificate takes %.1f ms" % (iterations, 1000 * (time.time() - start)))
+\end{lstlisting}
+
+Бенчмарк классического применения правил:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 start = time.time()
+
 for i in range(0, iterations):
    out_fuzzy_values = alg.apply_rules(in_fuzzy_values)
 print("%d alg.apply_rules takes %.1f ms" % (iterations, 1000 * (time.time() - start)))
+\end{lstlisting}
+
+Бенчмарк классической дефаззификации:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 start = time.time()
+
 for i in range(0, iterations):
    out_crisp_values = alg.defuzzificate(out_fuzzy_values)
 print("%d alg.defuzzificate takes %.1f ms" % (iterations, 1000 * (time.time() - start)))
+\end{lstlisting}
+
+Бенчмарк ускоренной дефаззификации интервальной функции принадлжености:
+
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 start = time.time()
+
 for i in range(0, iterations):
    center = ifv.get_center_of_mass()
 print("%d ifv.get_center_of_mass takes %.1f ms" % (iterations, 1000 * (time.time() - start)))
+\end{lstlisting}
+
+Бенчмарк ускоренной дефаззификации прямоугольной функции принадлжености:
+\begin{lstlisting}[style=pythonstyle,caption={  }, label=lst:func:1]
 start = time.time()
+
 for i in range(0, iterations):
    center = rfv.get_center_of_mass()
 print("%d rfv.get_center_of_mass takes %.1f ms" % (iterations, 1000 * (time.time() - start)))
