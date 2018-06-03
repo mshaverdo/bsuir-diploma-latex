@@ -1,4 +1,4 @@
-% !TeX spellcheck = russian-aot-ieyo
+% !TeX spellcheck = <none>
 % Зачем: Определяет класс документа (То, как будет выглядеть документ)
 % Примечание: параметр draft помечает строки, вышедшие за границы страницы, прямоугольником, в фильной версии его нужно удалить.
 \documentclass[a4paper,14pt,russian,oneside,final]{extreport}
@@ -60,7 +60,7 @@
 % Зачем: Настраивает межстрочный интервал, для размещения 40 +/- 3 строки текста на странице.
 % Почему: Пункт 2.1.1 Требований по оформлению пояснительной записки.
 \usepackage[nodisplayskipstretch]{setspace} 
-\setstretch{0.93}
+\setstretch{0.95}
 %\onehalfspacing
 
 % Зачем: Выбор шрифта по-умолчанию. 
@@ -102,6 +102,12 @@
 % Почему: Пункт 2.2.3 Требований по оформлению пояснительной записки.
 \setcounter{secnumdepth}{4}
 
+\newcommand{\sect}[3]{\refstepcounter{section}\setcounter{page}{#3}%
+  \addcontentsline{toc}{section}{\protect\numberline{#1}#2}%
+  \null\clearpage}
+\newcommand{\ssect}[3]{\refstepcounter{section}\setcounter{page}{#3}%
+  \addcontentsline{toc}{subsection}{\protect\numberline{#1}#2}%
+  \null\clearpage}
 
 % Зачем: Настраивает отступ между таблицей с содержанимем и словом СОДЕРЖАНИЕ
 % Почему: Пункт 2.2.7 Требований по оформлению пояснительной записки.
@@ -165,7 +171,7 @@
   \@startsection{subsubsection}{3}%
     {\fivecharsapprox}%
     {-1em \@plus -1ex \@minus -.2ex}%
-    {.1em}%
+    {1em \@plus .2ex}%
     {\raggedright\hyphenpenalty=10000\normalfont\normalsize}}
 \makeatother
 
@@ -176,7 +182,7 @@
   \@startsection{paragraph}{4}%
     {\fivecharsapprox}%
     {-1em \@plus -1ex \@minus -.2ex}%
-    {.1em}%
+    {1em \@plus .2ex}%
     {\raggedright\hyphenpenalty=10000\normalfont\normalsize}%
 } %
 \makeatother
