@@ -1,6 +1,8 @@
 \lstset{style=pythoninlinestyle}
 
-\addtocontents{toc}{\hspace*{0.5em}ПРИЛОЖЕНИЕ Б Исходный текст модуля Fuzzysim.Mamdani\newline}
+%\addtocontents{toc}{\hspace*{0.5em}ПРИЛОЖЕНИЕ Б Исходный текст модуля Fuzzysim.Mamdani\newline}
+\phantomsection%
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Б Исходный текст модуля Fuzzysim.Mamdani}
 
  \begin{center}
 	ПРИЛОЖЕНИЕ Б
@@ -90,11 +92,19 @@ class Variable:
 
 		memberships = {i: Membership(v, v.degree(crisp_value)) for i, v in self.terms.items()}
 		return FuzzyValue(self, crisp_value, memberships)
-
-
 class Membership:
         '''
-        Если кто-то дочитает до этого места, напишите на m.shaverdo@gmail.com со ссылкой на данный класс -- с меня ящик пива.
+        
+        
+If you are reading this comment, 
+you have won a pack of good BEER.
+It's NOT a joke. 
+Just e-mail me to m.shaverdo@gmail.com
+and tell that you found this easter egg 
+in the appendix of my thesis.
+     
+     
+     
         '''
 
 	def __init__(self, term, degree):
